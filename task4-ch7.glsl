@@ -1,3 +1,5 @@
+#include "common.glsl"
+
 struct Ray {
     vec3 origin;
     vec3 direction;
@@ -77,9 +79,43 @@ bool hit_world(Ray r, Interval ray_t, out HitRecord rec) {
     return hit_anything;
 }
 
+////////////////////////////////////////////// 
+//                  TASK 4                  //
+struct Camera {
+    float image_width;
+    float image_height;
+    float aspect_ratio;
+    vec3 center;
+    vec3 pixel00_loc;
+    vec3 pixel_delta_u;
+    vec3 pixel_delta_v;
+    int samples_per_pixel;
+};
+
+void initialize_camera(out Camera cam) {
+    cam.image_width = iResolution.x;
+    cam.image_height = iResolution.y;
+    cam.aspect_ratio = cam.image_width / cam.image_height;
+
+    cam.center = vec3(0.0, 0.0, 0.0);
+
+    float focal_length = 1.0;
+    float viewport_height = 2.0;
+    float viewport_width = cam.aspect_ratio * viewport_height;
+
+    vec3 viewport_u = vec3(viewport_width, 0.0, 0.0);
+    vec3 viewport_v = vec3(0.0, -viewport_height, 0.0);
+
+    cam.pixel_delta_u = viewport_u / cam.image_width;
+    cam.pixel_delta_v = viewport_v / cam.image_height;
+
+    vec3 viewport_upper_left = cam.center - vec3(0.0, 0.0, focal_length) - viewport_u / 2.0 - viewport_v / 2.0;
+    cam.pixel00_loc = viewport_upper_left + 0.5 * (cam.pixel_delta_u + cam.pixel_delta_v);
+}
+
 vec3 ray_color(Ray r) {
     HitRecord rec;
-    if (hit_world(r, Interval(0.0, 1.0/0.0), rec)) {
+    if (hit_world(r, Interval(0.0, 1.0 / 0.0), rec)) {
         return 0.5 * (rec.normal + vec3(1.0, 1.0, 1.0));
     }
 
@@ -88,11 +124,36 @@ vec3 ray_color(Ray r) {
     return (1.0 - a) * vec3(1.0, 1.0, 1.0) + a * vec3(0.5, 0.7, 1.0);
 }
 
+vec3 pixel_sample_square(Camera cam) {
+    float px = -0.5 + rand1(g_seed);
+    float py = -0.5 + rand1(g_seed);
+    return px * cam.pixel_delta_u + py * cam.pixel_delta_v;
+}
+
+Ray get_ray(Camera cam, float i, float j) {
+    vec3 pixel_center = cam.pixel00_loc + i * cam.pixel_delta_u + j * cam.pixel_delta_v;
+    vec3 pixel_sample = pixel_center + pixel_sample_square(cam);
+
+    vec3 ray_origin = cam.center;
+    vec3 ray_direction = pixel_sample - ray_origin;
+    return Ray(ray_origin, ray_direction);
+}
+
+void render_camera(Camera cam) {
+    initialize_camera(cam);
+
+    vec3 pixel_color = vec3(0.0, 0.0, 0.0);
+    for (int i = 0; i < cam.samples_per_pixel; i++) {
+        Ray ray = get_ray(cam, gl_FragCoord.x, cam.image_height - gl_FragCoord.y);
+        pixel_color += ray_color(ray);
+    }
+
+    pixel_color /= float(cam.samples_per_pixel);
+    gl_FragColor = vec4(pixel_color, 1.0);
+}
+
 void main() {
-    // Image
-    float image_width = iResolution.x;
-    float image_height = iResolution.y;
-    float aspect_ratio = image_width / image_height;
+    init_rand(gl_FragCoord.xy, iTime);
 
     // World
     spheres[0] = Sphere(vec3(0.0, 0.0, -1.0), 0.5);
@@ -100,24 +161,11 @@ void main() {
     num_spheres = 2;
 
     // Camera
-    float focal_length = 1.0;
-    float viewport_height = 2.0;
-    float viewport_width = aspect_ratio * viewport_height;
-    vec3 camera_center = vec3(0.0, 0.0, 0.0);
-
-    vec3 viewport_u = vec3(viewport_width, 0.0, 0.0);
-    vec3 viewport_v = vec3(0.0, -viewport_height, 0.0);
-
-    vec3 pixel_delta_u = viewport_u / image_width;
-    vec3 pixel_delta_v = viewport_v / image_height;
-
-    vec3 viewport_upper_left = camera_center - vec3(0.0, 0.0, focal_length) - viewport_u / 2.0 - viewport_v / 2.0;
-    vec3 pixel00_loc = viewport_upper_left + 0.5 * (pixel_delta_u + pixel_delta_v);
+    Camera cam;
+    cam.samples_per_pixel = 100;
 
     // Render
-    vec3 pixel_center = pixel00_loc + gl_FragCoord.x * pixel_delta_u + (image_height - gl_FragCoord.y) * pixel_delta_v;
-    vec3 ray_direction = pixel_center - camera_center;
-    Ray ray = Ray(camera_center, ray_direction);
-
-    gl_FragColor = vec4(ray_color(ray), 1.0);
+    render_camera(cam);
 }
+//                                          //
+//////////////////////////////////////////////
