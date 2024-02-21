@@ -1,0 +1,484 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <!-- Bootstrap CSS -->
+    <!-- <link href="resources/superhero.min.css" rel="stylesheet" /> -->
+    <link href="resources/lumen.min.css" rel="stylesheet" />
+    <!-- <link href="resources/cerulean.min.css" rel="stylesheet" /> -->
+    <!-- <link href="resources/darkly.min.css" rel="stylesheet" /> -->
+    <!-- <link href="resources/united.min.css" rel="stylesheet" /> -->
+    <!-- <link href="resources/bootstrap5.min.css" rel="stylesheet" /> -->
+
+    <title>Computer Graphics - Assignment 6</title>
+
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+    <link rel="stylesheet" href="resources/github-dark-dimmed.css">
+    <script src="resources/highlight.min.js"></script>
+    <script src="resources/glsl.min.js"></script>
+    <script>
+        hljs.configure({ cssSelector: 'code' });
+        hljs.highlightAll();
+    </script>
+</head>
+
+<body class="language-plaintext">
+    <div class="container">
+        <h1>CS 77/277 - Programming Assignment 6</h1>
+        <h2>Overview</h2>
+
+        <div class="row">
+            <div class="col-sm-7 col-md-7">
+                <p>You will be implementing all of the features of the ray tracer described in the book, <em><a
+                            href="https://raytracing.github.io/books/RayTracingInOneWeekend.html">Ray Tracing
+                            in One Weekend (RTiOW)</a></em>, by Peter Shirley, for this assignment.</p>
+                <p>Unlike previous assignments, this time the base code that we give you will be very minimal. It
+                    is up to you to implement the assignment how you see fit, however we will be giving you tips on
+                    how to structure your code in this document. <strong>Please make sure to read this document
+                        carefully</strong>. While the solutions are more or less already given to you in the
+                    textbook in C++, GLSL is a very different beast than C++. You will have to implement your ray
+                    tracer quite differently from how it is implemented in RTiOW due to the language
+                    differences.</p>
+
+                <p>Here are a few good references you may find useful when working with GLSL:</p>
+                <ul>
+                    <li><a
+                            href="https://www.khronos.org/assets/uploads/developers/presentations/opengles32-quick-reference-card.pdf">Quick
+                            reference card (starts on Slide 6)</a></li>
+                    <li><a href="https://www.khronos.org/opengles/sdk/docs/manglsl/docbook4/">Official documentation</a>
+                    </li>
+                </ul>
+
+                <div class="alert alert-warning" role="alert">
+                    <p><strong>Note:</strong> Save each task as a
+                        <strong>separate
+                            shader file</strong> (copy and paste your entire shader after each task into a new file to
+                        continue
+                        work on the next task).
+                    </p>
+
+                    <p>Surround changes between tasks with
+                        a comment block such as
+                    <pre><code class="language-glsl">
+task = 1;
+do something;
+
+////////////////////////////////////////////// 
+//                  TASK 2                  //
+float change;
+
+for (int t = 0; t < tasks; t++)
+    change = complete;
+//                                          //
+//////////////////////////////////////////////
+result = more(task1, code);
+                </code></pre>
+                    </p>
+                </div>
+            </div>
+
+            <div class="col-sm-5 col-md-5">
+            </div>
+        </div>
+
+        <!-- ================================================================= -->
+
+        <h2>Task 1: Implement Chapter 4 of RTiOW <span class="badge rounded-pill bg-primary">0.5 pts</span></h2>
+
+        <div class="row">
+            <div class="col-sm-7 col-md-7">
+                <p>The base code simply interpolates the color displayed by the shader depending on the coordinate of
+                    the
+                    pixel being rendered.</p>
+                <p>You are welcome to read Chapters 1 through 3 of <em>Ray Tracing in One Weekend</em>, but GLSL already
+                    has a
+                    built-in <code>vec3</code> type that we will use for directions, points and colors, so you can skip
+                    these chapters.</p>
+                <p>Your first task is to implement <a
+                        href="https://raytracing.github.io/books/RayTracingInOneWeekend.html#rays,asimplecamera,andbackground"
+                        target="_blank" rel="noopener">Chapter 4</a>. This part is
+                    all
+                    about creating rays and much of it will look very familiar from last assignment! Feel free to reuse
+                    any code
+                    you wrote for that assignment.</p>
+                <p>In general, you will notice that there are some difference between the code presented in the book and
+                    the
+                    code you have been writing in GLSL. For example, you will meet an obstacle while designing the ray
+                    class.
+                    GLSL does not support object-oriented programming! So you will have to specify your "classes" simply
+                    as
+                    structs which store information like so:</p>
+                <pre><code class="language-glsl">//
+// Ray
+//
+
+struct ray
+{
+    vec3 origin;    // this is the origin of the ray
+    vec3 direction; // this is the direction the ray is pointing in
+};
+</code></pre>
+                <p>Also, note that structs in GLSL cannot have their own methods and there is no concept of public /
+                    private /
+                    protected or inheritance in GLSL. So you do not need to implement all of the constructors / getters
+                    /
+                    setters / or methods that the RTiOW book uses within the class definitions. However, <strong>you do
+                        need to
+                        create structs to represent your various data structures</strong>. Make sure to also use
+                    descriptive variable names and include comments.</p>
+                <p>While your structs cannot have explicitly defined constructors, they do have implicitly created ones.
+                    As long as you pass in your variables in the same order that your struct's variables are defined you
+                    should be good. For example:</p>
+                <pre><code class="language-glsl">ray r = ray(vec3(0,0,0), vec3(0,0,-1));</code></pre>
+                <p>In this task, you will need to implement a <code>ray</code> struct, which is the same as the one
+                    from the
+                    last assignment.</p>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-sm-7 col-md-7">
+                <p>Chapter 4 uses a fixed resolution and 16x9 aspect ratio. Our shader, however, will render at the
+                    resolution of the shader preview window. The
+                    variable <code>iResolution</code> tells you the horizontal and vertical resolution. To ensure that
+                    your shader renders a properly proportioned image regardless of the size of the shader window, make
+                    sure to set the resolution and aspect ratio of your image and camera based on this variable.
+                </p>
+                <p>At this point you should have a shader which produces an image that looks like Figure 1.</p>
+
+                <p>You have finished Task 1!</p>
+
+                <div class="alert alert-info" role="alert"><strong>Reminder:</strong> Save your shader and start a
+                    new one. Also create a portable GLSL preview of your progress and name it Task1 to turn in as a part
+                    of your final zip. Remember to do this for all remaining tasks.</div>
+            </div>
+            <div class="col-sm-5 col-md-5">
+                <figure class="figure">
+                    <a href="figures/task_1.jpg"><img src="figures/task_1.jpg" class="figure-img img-fluid rounded"
+                            alt="..."></a>
+                    <figcaption class="figure-caption">Figure 1</figcaption>
+                </figure>
+            </div>
+        </div>
+
+        <!-- ================================================================= -->
+
+        <h2>Task 2: Sphere intersection <span class="badge rounded-pill bg-primary">0.5 pts</span></h2>
+
+        <div class="row">
+            <div class="col-sm-7 col-md-7">
+                <p>Read and implement <a
+                        href="https://raytracing.github.io/books/RayTracingInOneWeekend.html#addingasphere"
+                        target="_blank" rel="noopener">Chapter 5</a><em> </em>as a shader<em>.</em></p>
+                <p>For this task, you <strong>must</strong> implement and use a separate function for testing sphere
+                    intersections like the <code>hit_sphere</code> function in RTiOW. Do not implement everything in the
+                    main function.
+                </p>
+                <p>After implementing this chapter you should get an image which looks like Figure 2.</p>
+
+                <p>You have finished Task 2!
+                </p>
+            </div>
+            <div class="col-sm-5 col-md-5">
+                <figure class="figure">
+                    <a href="figures/task_2.jpg"><img src="figures/task_2.jpg" class="figure-img img-fluid rounded"
+                            alt="..."></a>
+                    <figcaption class="figure-caption">Figure 2</figcaption>
+                </figure>
+            </div>
+        </div>
+
+        <!-- ================================================================= -->
+
+        <h2>Task 3: Visualizing surface normals <span class="badge rounded-pill bg-primary">0.5 pts</span></h2>
+
+        <div class="row">
+            <div class="col-sm-7 col-md-7">
+                <p>Read and implement <a
+                        href="https://raytracing.github.io/books/RayTracingInOneWeekend.html#surfacenormalsandmultipleobjects"
+                        target="_blank" rel="noopener">Chapter 6</a><em> </em>as a shader<em>.</em></p>
+                <p>For this task you <strong>must</strong> implement a struct to represent a <code>sphere</code> object
+                    <strong>and</strong> a struct to represent a <code>hit_record</code>. Since GLSL does not support
+                    inheritance or
+                    dynamically sized lists, you <strong>do not</strong> have to implement <code>hitable</code> or
+                    <code>hitable_list</code>.
+                    You will not be rendering any objects other than spheres so you do not have to worry about generics.
+                    For this assignment all of your spheres will be hardcoded, however, if you wish to make your code
+                    nicer you may use fixed length arrays.
+                </p>
+                <p>After implementing this chapter you should get an image which looks like Figure 3.
+            </div>
+            <div class="col-sm-5 col-md-5">
+                <figure class="figure">
+                    <a href="figures/task_3.jpg"><img src="figures/task_3.jpg" class="figure-img img-fluid rounded"
+                            alt="..."></a>
+                    <figcaption class="figure-caption">Figure 3</figcaption>
+                </figure>
+            </div>
+        </div>
+
+        <!-- ================================================================= -->
+
+        <h2>Task 4: Antialiasing <span class="badge rounded-pill bg-primary">0.5 pts</span></h2>
+
+        <div class="row">
+            <div class="col-sm-7 col-md-7">
+                <p>Read and implement <a
+                        href="https://raytracing.github.io/books/RayTracingInOneWeekend.html#antialiasing"
+                        target="_blank" rel="noopener">Chapter 7</a> as a shader. In <code>common.glsl</code> we provide
+                    an implementation of a random number generator (as well as some extra functions that we will use in
+                    later chapters).
+                    Include it in
+                    the top of your shader. <strong>Tip:</strong> Look at how your previous assignment did this, or
+                    read the documentation for the Shadertoy extension.
+                </p>
+                <p>To implement this chapter you <strong>must</strong> create a <code>camera</code> struct, and also you
+                    will have to
+                    modify your <code class="language-glsl">main()</code> function to take 100 pixel samples by randomly
+                    choosing different
+                    camera rays.
+                    <strong>Note:</strong> there is a much better way of doing this by using Shadertoy channels,
+                    but we'll mention that towards the end of this assignment
+                </p>
+                <p>After implementing this chapter you should get an image which looks like Figure 4.</p>
+            </div>
+            <div class="col-sm-5 col-md-5">
+                <figure class="figure">
+                    <a href="figures/task_4.jpg"><img src="figures/task_4.jpg" class="figure-img img-fluid rounded"
+                            alt="..."></a>
+                    <figcaption class="figure-caption">Figure 4</figcaption>
+                </figure>
+            </div>
+        </div>
+
+        <!-- ================================================================= -->
+
+        <h2>Task 5: Diffuse materials <span class="badge rounded-pill bg-primary">0.5 pts</span></h2>
+
+        <div class="row">
+            <div class="col-sm-7 col-md-7">
+                <p>Read and implement <a
+                        href="https://raytracing.github.io/books/RayTracingInOneWeekend.html#diffusematerials"
+                        target="_blank" rel="noopener">Chapter 8</a> as a shader<em>. </em></p>
+                <p>We provide you the <code class="language-glsl">random_in_unit_sphere()</code> function in the
+                    <code>common.glsl</code>
+                    file.
+                    We have implemented a more
+                    efficient version than the one described in the book for you. Loops which do not have a fixed number
+                    of iterations across pixels are extremely inefficient to use and should always be avoided while
+                    programming for the GPU, so we avoided using the rejection sampling method which the book describes.
+                </p>
+                <p>There is also a bug in the book which makes the diffuse material not exactly correct. When computing
+                    the scattered direction after hitting a sphere, make sure to normalize the sum of the normal with
+                    the randomly chosen direction on the unit sphere.</p>
+                <p>Note: there are two different ways of doing gamma correction. Instead of implementing it the way the
+                    book implemented it, our solution utilizes a gamma value closer to the one used in the sRGB color
+                    space. Which is done like so:</p>
+                <pre><code class="language-glsl">pow(color_val, vec3(1.0/2.2))</code></pre>
+                <p>If you use the solution in the book your diffuse material might come out looking a bit darker, but
+                    that is fine.</p>
+                <p>After implementing this chapter you should get an image which looks like Figure 5.</p>
+            </div>
+            <div class="col-sm-5 col-md-5">
+                <figure class="figure">
+                    <a href="figures/task_5.jpg"><img src="figures/task_5.jpg" class="figure-img img-fluid rounded"
+                            alt="..."></a>
+                    <figcaption class="figure-caption">Figure 5</figcaption>
+                </figure>
+            </div>
+        </div>
+
+        <!-- ================================================================= -->
+
+        <h2>Task 6: Metal material <span class="badge rounded-pill bg-primary">UG: 1.0 pts, G: 0.5 pts</span></h2>
+
+        <div class="row">
+            <div class="col-sm-7 col-md-7">
+                <p>Read and implement <a href="https://raytracing.github.io/books/RayTracingInOneWeekend.html#metal"
+                        target="_blank" rel="noopener">Chapter 9</a> as a shader<em>.</em></p>
+                <p>For this task you <strong>must</strong> implement a <code>material</code> struct and fully
+                    incorporate it
+                    into your shader. You must also use it to support Lambertian and Metal materials. We recommend
+                    organizing your material struct to have three variables. One <code>vec3</code> represents its color,
+                    or albedo.
+                    One <code>int</code> which represents the type of material that it is, with all of the material
+                    types <code>#defined</code> at
+                    the top of your shader, and lastly a <code>float</code> which is a material-dependent variable.</p>
+                <p>You also <strong>must</strong> have a single <code>material_scatter</code> method which decides what
+                    to do
+                    based on the type of material that was intersected.</p>
+                <p>Note that GLSL already has a built-in <code>reflect</code> function, so you do not need to implement
+                    one yourself.
+                </p>
+                <p>After implementing this chapter you should get an image which looks like Figure 6.</p>
+            </div>
+            <div class="col-sm-5 col-md-5">
+                <figure class="figure">
+                    <a href="figures/task_6.jpg"><img src="figures/task_6.jpg" class="figure-img img-fluid rounded"
+                            alt="..."></a>
+                    <figcaption class="figure-caption">Figure 6</figcaption>
+                </figure>
+            </div>
+        </div>
+
+        <!-- ================================================================= -->
+
+        <h2>Task 7: Dielectrics <span class="badge rounded-pill bg-primary">0.5 pts</span></h2>
+
+        <div class="row">
+            <div class="col-sm-7 col-md-7">
+                <p>Read and implement <a
+                        href="https://raytracing.github.io/books/RayTracingInOneWeekend.html#dielectrics"
+                        target="_blank" rel="noopener">Chapter 10</a> as a shader<em>.</em></p>
+                <p>To implement this task, you must expand the scope of your material implementation to support
+                    dielectrics.</p>
+                <p>After implementing this chapter you should get an image which looks like Figure 7.</p>
+            </div>
+            <div class="col-sm-5 col-md-5">
+                <figure class="figure">
+                    <a href="figures/task_7.jpg"><img src="figures/task_7.jpg" class="figure-img img-fluid rounded"
+                            alt="..."></a>
+                    <figcaption class="figure-caption">Figure 7</figcaption>
+                </figure>
+            </div>
+        </div>
+
+        <!-- ================================================================= -->
+
+        <h2>Task 8: Better camera <span class="badge rounded-pill bg-primary">0.5 pts</span></h2>
+
+        <div class="row">
+            <div class="col-sm-7 col-md-7">
+                <p>Read and implement <a
+                        href="https://raytracing.github.io/books/RayTracingInOneWeekend.html#positionablecamera"
+                        target="_blank" rel="noopener">Chapter 11</a> as a shader. Again, feel free to
+                    reuse code
+                    from the previous assignment.</p>
+                <p>After implementing this chapter you should get an image which looks like Figure 8.:</p>
+            </div>
+            <div class="col-sm-5 col-md-5">
+                <figure class="figure">
+                    <a href="figures/task_8.jpg"><img src="figures/task_8.jpg" class="figure-img img-fluid rounded"
+                            alt="..."></a>
+                    <figcaption class="figure-caption">Figure 8</figcaption>
+                </figure>
+            </div>
+        </div>
+
+        <!-- ================================================================= -->
+
+        <h2>Task 9: Defocus Blur <span class="badge rounded-pill bg-primary">0.5 pts</span></h2>
+
+        <div class="row">
+            <div class="col-sm-7 col-md-7">
+                <p>Read and implement <a
+                        href="https://raytracing.github.io/books/RayTracingInOneWeekend.html#defocusblur"
+                        target="_blank" rel="noopener">Chapter 12</a> as a shader<em>.</em></p>
+                <p>After implementing this chapter you should get an image which looks like Figure 9.:</p>
+            </div>
+            <div class="col-sm-5 col-md-5">
+                <figure class="figure">
+                    <a href="figures/task_9.jpg"><img src="figures/task_9.jpg" class="figure-img img-fluid rounded"
+                            alt="..."></a>
+                    <figcaption class="figure-caption">Figure 9</figcaption>
+                </figure>
+            </div>
+        </div>
+
+        <!-- ================================================================= -->
+
+        <h2>Task 10: Progressive Rendering <span class="badge rounded-pill bg-primary">GRAD only, 0.5 pts</span></h2>
+
+        <div class="row">
+            <div class="col-sm-7 col-md-7">
+                <p>Implement progressive rendering by implementing antialiasing through the use of Shadertoy
+                    channels/buffers.
+                    Remove the for loop you added in Task 4 that loops through 100 samples and only take one sample
+                    per call
+                    to your shader. Now implement antialiasing (<strong>Hint:</strong> very little code involved. Look
+                    at how <a href="https://www.shadertoy.com/" target="_blank" rel="noopener">other Shadertoy
+                        shaders</a> work, and read the Shadertoy extension documentation. This extension requires that
+                    your file
+                    serving as the "buffer" writes to the same channel your main file reads from).</p>
+            </div>
+        </div>
+
+        <!-- ================================================================= -->
+
+        <h2>Task 11: Recreate the cover of the textbook <span class="badge rounded-pill bg-primary">0.5 pts</span></h2>
+
+        <div class="row">
+            <div class="col-sm-7 col-md-7">
+                <p>Read <a href="https://raytracing.github.io/books/RayTracingInOneWeekend.html#wherenext?"
+                        target="_blank" rel="noopener">Chapter 13</a>. The cover of RTiOW was generated by simply
+                    creating random spheres with
+                    random material properties, and placing them randomly around the scene. You are to do the same for
+                    this
+                    task, however, note that if you use the random function like how you have been using it before, you
+                    will end
+                    up creating different scene configurations every render.</p>
+                <p>Currently your random number generator is initialized as follows:</p>
+                <pre><code class="language-glsl">init_rand(gl_FragCoord.xy, iTime);</code></pre>
+                <p>Your random number generator is seeded based on the current render time which means its generated
+                    random
+                    numbers will be different every time your shader gets ran. However, you want your spheres to always
+                    be in
+                    the same, randomly chosen, locations. You can achieve this by re-seeding the random number generator
+                    before
+                    you do your scene intersection tests to some constant of your choice.</p>
+                <p>If you do this final task correctly you should get something similar to Figure 10.</p>
+                <p><strong>Note:</strong> Since the scene composition will depend completely on your choice of seed,
+                    your image
+                    will not look exactly the same as above</p>
+            </div>
+            <div class="col-sm-5 col-md-5">
+                <figure class="figure">
+                    <a href="figures/task_10.jpg"><img src="figures/task_10.jpg" class="figure-img img-fluid rounded"
+                            alt="..."></a>
+                    <figcaption class="figure-caption">Figure 10</figcaption>
+                </figure>
+            </div>
+        </div>
+
+        <!-- ================================================================= -->
+
+        <h2>Task 12: Interesting scene <span class="badge rounded-pill bg-primary">0.5 pts</span></h2>
+
+        <div class="row">
+            <div class="col-sm-7 col-md-7">
+                <p>Implement your own interesting scene! Try to wow us with your creativity!</p>
+            </div>
+        </div>
+
+        <!-- ================================================================= -->
+
+        <h2>What to Submit</h2>
+
+        <div class="row">
+            <div class="col-sm-7 col-md-7">
+                <p>Just like last time, you should have individual HTML files for each task. Submit them inside of a zip
+                    folder along with the <code>README</code> and a subfolder of the original GLSL files (including the
+                    <code>common.glsl</code>).
+                </p>
+            </div>
+            <div class="col-sm-5 col-md-5">
+                <figure class="figure">
+                    <a href="figures/submit.png"><img src="figures/submit.png" class="figure-img img-fluid rounded"
+                            alt="..."></a>
+                    <figcaption class="figure-caption">Figure 11</figcaption>
+                </figure>
+            </div>
+        </div>
+
+    </div>
+
+    <script src="resources/bootstrap.bundle.min.js"></script>
+</body>
+
+</html>
