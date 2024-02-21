@@ -12,14 +12,14 @@ bool hit_sphere(vec3 center, float radius, Ray r) {
     return (discriminant >= 0.0);
 }
 
-vec4 ray_color(Ray r) {
+vec3 ray_color(Ray r) {
     if (hit_sphere(vec3(0.0, 0.0, -1.0), 0.5, r)) {
-        return vec4(1.0, 0.0, 0.0, 1.0);
+        return vec3(1.0, 0.0, 0.0);
     }
 
     vec3 unit_direction = normalize(r.direction);
     float a = 0.5 * (unit_direction.y + 1.0);
-    return vec4((1.0 - a) * vec3(1.0, 1.0, 1.0) + a * vec3(0.5, 0.7, 1.0), 1.0);
+    return (1.0 - a) * vec3(1.0, 1.0, 1.0) + a * vec3(0.5, 0.7, 1.0);
 }
 
 void main() {
@@ -48,5 +48,5 @@ void main() {
     vec3 ray_direction = pixel_center - camera_center;
     Ray ray = Ray(camera_center, ray_direction);
 
-    gl_FragColor = ray_color(ray);
+    gl_FragColor = vec4(ray_color(ray), 1.0);
 }
