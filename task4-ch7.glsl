@@ -1,11 +1,59 @@
-void main()
-{
-    // Normalized pixel coordinates (from 0 to 1)
-    vec2 uv = gl_FragCoord.xy / iResolution.xy;
-    float r = uv.x;
-    float g = uv.y;
-    float b = 0.2;
+struct Ray {
+    vec3 origin;
+    vec3 direction;
+};
 
-    vec3 col = vec3(r, g, b);
-    gl_FragColor = vec4(col, 1.0);
+float hit_sphere(vec3 center, float radius, Ray r) {
+    vec3 oc = r.origin - center;
+    float a = dot(r.direction, r.direction);
+    float b = 2.0 * dot(oc, r.direction);
+    float c = dot(oc, oc) - radius * radius;
+    float discriminant = b * b - 4.0 * a * c;
+
+    if (discriminant < 0.0) {
+        return -1.0;
+    } else {
+        return (-b - sqrt(discriminant)) / (2.0 * a);
+    }
+}
+
+vec3 ray_color(Ray r) {
+    float t = hit_sphere(vec3(0.0, 0.0, -1.0), 0.5, r);
+    if (t > 0.0) {
+        vec3 N = normalize(r.origin + t * r.direction - vec3(0.0, 0.0, -1.0));
+        return 0.5 * vec3(N.x + 1.0, N.y + 1.0, N.z + 1.0);
+    }
+
+    vec3 unit_direction = normalize(r.direction);
+    float a = 0.5 * (unit_direction.y + 1.0);
+    return (1.0 - a) * vec3(1.0, 1.0, 1.0) + a * vec3(0.5, 0.7, 1.0);
+}
+
+void main() {
+    // Image
+    float image_width = iResolution.x;
+    float image_height = iResolution.y;
+    float aspect_ratio = image_width / image_height;
+
+    // Camera
+    float focal_length = 1.0;
+    float viewport_height = 2.0;
+    float viewport_width = aspect_ratio * viewport_height;
+    vec3 camera_center = vec3(0.0, 0.0, 0.0);
+
+    vec3 viewport_u = vec3(viewport_width, 0.0, 0.0);
+    vec3 viewport_v = vec3(0.0, -viewport_height, 0.0);
+
+    vec3 pixel_delta_u = viewport_u / image_width;
+    vec3 pixel_delta_v = viewport_v / image_height;
+
+    vec3 viewport_upper_left = camera_center - vec3(0.0, 0.0, focal_length) - viewport_u / 2.0 - viewport_v / 2.0;
+    vec3 pixel00_loc = viewport_upper_left + 0.5 * (pixel_delta_u + pixel_delta_v);
+
+    // Render
+    vec3 pixel_center = pixel00_loc + gl_FragCoord.x * pixel_delta_u + (image_height - gl_FragCoord.y) * pixel_delta_v;
+    vec3 ray_direction = pixel_center - camera_center;
+    Ray ray = Ray(camera_center, ray_direction);
+
+    gl_FragColor = vec4(ray_color(ray), 1.0);
 }
