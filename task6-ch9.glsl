@@ -1,5 +1,8 @@
 #include "common.glsl"
 
+#define LAMBERTIAN 0
+#define METAL 1
+
 struct Ray {
     vec3 origin;
     vec3 direction;
@@ -18,9 +21,17 @@ bool interval_surrounds(Interval i, float x) {
     return i.min < x && x < i.max;
 }
 
+////////////////////////////////////////////// 
+//                  TASK 6                  //
+struct Material {
+    vec3 albedo;
+    int type;
+};
+
 struct Sphere {
     vec3 center;
     float radius;
+    Material mat;
 };
 
 struct HitRecord {
@@ -28,7 +39,42 @@ struct HitRecord {
     vec3 normal;
     float t;
     bool front_face;
+    Material mat;
 };
+
+bool near_zero(vec3 v) {
+    const float s = 1e-8;
+    return (abs(v.x) < s) && (abs(v.y) < s) && (abs(v.z) < s);
+}
+
+vec3 random_unit_vector() {
+    return normalize(random_in_unit_sphere(g_seed));
+}
+
+bool material_scatter(Material mat, Ray r_in, HitRecord rec, out vec3 attenuation, out Ray scattered) {
+    switch (mat.type) {
+        case LAMBERTIAN: {
+            vec3 scatter_direction = rec.normal + random_unit_vector();
+            if (near_zero(scatter_direction))
+                scatter_direction = rec.normal;
+
+            scattered = Ray(rec.p, scatter_direction);
+            attenuation = mat.albedo;
+            return true;
+        }
+        case METAL: {
+            vec3 reflected = reflect(normalize(r_in.direction), rec.normal);
+            scattered = Ray(rec.p, reflected);
+            attenuation = mat.albedo;
+            return true;
+        }
+        default: {
+            return false;
+        }
+    }
+}
+//                                          //
+//////////////////////////////////////////////
 
 const int MAX_SPHERES = 10;
 Sphere spheres[MAX_SPHERES];
@@ -59,6 +105,7 @@ bool hit_sphere(Sphere s, Ray r, Interval ray_t, out HitRecord rec) {
     vec3 outward_normal = (rec.p - s.center) / s.radius;
     rec.front_face = dot(r.direction, outward_normal) < 0.0;
     rec.normal = rec.front_face ? outward_normal : -outward_normal;
+    rec.mat = s.mat;
 
     return true;
 }
@@ -119,9 +166,18 @@ vec3 ray_color(Ray r, int max_depth) {
     for (int i = 0; i < max_depth; i++) {
         HitRecord rec;
         if (hit_world(r, Interval(0.001, 1.0 / 0.0), rec)) {
-            vec3 direction = normalize(rec.normal + normalize(random_in_unit_sphere(g_seed)));
-            r = Ray(rec.p, direction);
-            attenuation *= 0.5;
+////////////////////////////////////////////// 
+//                  TASK 6                  //
+            Ray scattered;
+            vec3 attenuation_out;
+            if (material_scatter(rec.mat, r, rec, attenuation_out, scattered)) {
+                attenuation *= attenuation_out;
+                r = scattered;
+            } else {
+                break;
+            }
+//                                          //
+//////////////////////////////////////////////
         } else {
             // Background color
             vec3 unit_direction = normalize(r.direction);
@@ -166,10 +222,21 @@ void render_camera(Camera cam) {
 void main() {
     init_rand(gl_FragCoord.xy, iTime);
 
+////////////////////////////////////////////// 
+//                  TASK 6                  //
     // World
-    spheres[0] = Sphere(vec3(0.0, 0.0, -1.0), 0.5);
-    spheres[1] = Sphere(vec3(0.0, -100.5, -1.0), 100.0);
-    num_spheres = 2;
+    Material material_ground = Material(vec3(0.8, 0.8, 0.0), LAMBERTIAN);
+    Material material_center = Material(vec3(0.7, 0.3, 0.3), LAMBERTIAN);
+    Material material_left = Material(vec3(0.8, 0.8, 0.8), METAL);
+    Material material_right = Material(vec3(0.8, 0.6, 0.2), METAL);
+
+    spheres[0] = Sphere(vec3(0.0, -100.5, -1.0), 100.0, material_ground);
+    spheres[1] = Sphere(vec3(0.0, 0.0, -1.0), 0.5, material_center);
+    spheres[2] = Sphere(vec3(-1.0, 0.0, -1.0), 0.5, material_left);
+    spheres[3] = Sphere(vec3(1.0, 0.0, -1.0), 0.5, material_right);
+    num_spheres = 4;
+//                                          //
+//////////////////////////////////////////////
 
     // Camera
     Camera cam;
