@@ -1,5 +1,7 @@
 #include "common.glsl"
 
+#iChannel0 "self"
+
 #define LAMBERTIAN 0
 #define METAL 1
 #define DIELECTRIC 2
@@ -250,13 +252,19 @@ Ray get_ray(Camera cam, float i, float j) {
 void render_camera(Camera cam) {
     initialize_camera(cam);
 
-    vec3 pixel_color = vec3(0.0, 0.0, 0.0);
-    for (int i = 0; i < cam.samples_per_pixel; i++) {
-        Ray ray = get_ray(cam, gl_FragCoord.x, cam.image_height - gl_FragCoord.y);
-        pixel_color += ray_color(ray, cam.max_depth);
-    }
+////////////////////////////////////////////// 
+//                  TASK 10                 //
+    Ray ray = get_ray(cam, gl_FragCoord.x, cam.image_height - gl_FragCoord.y);
+    vec3 pixel_color = ray_color(ray, cam.max_depth);
 
-    pixel_color /= float(cam.samples_per_pixel);
+    vec3 pixel_color_buffer = texture(iChannel0, gl_FragCoord.xy / iResolution.xy).rgb;
+    pixel_color_buffer = pow(pixel_color_buffer, vec3(2.2));
+    float frame = float(iFrame) + 1.0;
+    pixel_color = (pixel_color_buffer * (frame - 1.0) + pixel_color) / frame;
+    pixel_color = clamp(pixel_color, 0.0, 1.0);
+//                                          //
+//////////////////////////////////////////////
+
     pixel_color = pow(pixel_color, vec3(1.0 / 2.2));
     gl_FragColor = vec4(pixel_color, 1.0);
 }
