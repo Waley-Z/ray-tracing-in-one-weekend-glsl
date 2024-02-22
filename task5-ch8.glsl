@@ -88,6 +88,7 @@ struct Camera {
     vec3 pixel_delta_u;
     vec3 pixel_delta_v;
     int samples_per_pixel;
+    int max_depth;
 };
 
 void initialize_camera(out Camera cam) {
@@ -111,16 +112,31 @@ void initialize_camera(out Camera cam) {
     cam.pixel00_loc = viewport_upper_left + 0.5 * (cam.pixel_delta_u + cam.pixel_delta_v);
 }
 
-vec3 ray_color(Ray r) {
-    HitRecord rec;
-    if (hit_world(r, Interval(0.0, 1.0 / 0.0), rec)) {
-        return 0.5 * (rec.normal + vec3(1.0, 1.0, 1.0));
-    }
+////////////////////////////////////////////// 
+//                  TASK 5                  //
+vec3 ray_color(Ray r, int max_depth) {
+    vec3 accumulated_color = vec3(0.0);
+    vec3 attenuation = vec3(1.0);
 
-    vec3 unit_direction = normalize(r.direction);
-    float a = 0.5 * (unit_direction.y + 1.0);
-    return (1.0 - a) * vec3(1.0, 1.0, 1.0) + a * vec3(0.5, 0.7, 1.0);
+    for (int i = 0; i < max_depth; i++) {
+        HitRecord rec;
+        if (hit_world(r, Interval(0.001, 1.0 / 0.0), rec)) {
+            vec3 direction = normalize(rec.normal + normalize(random_in_unit_sphere(g_seed)));
+            r = Ray(rec.p, direction);
+            attenuation *= 0.5;
+        } else {
+            // Background color
+            vec3 unit_direction = normalize(r.direction);
+            float a = 0.5 * (unit_direction.y + 1.0);
+            vec3 background_color = (1.0 - a) * vec3(1.0, 1.0, 1.0) + a * vec3(0.5, 0.7, 1.0);
+            accumulated_color += attenuation * background_color;
+            break;
+        }
+    }
+    return accumulated_color;
 }
+//                                          //
+//////////////////////////////////////////////
 
 vec3 pixel_sample_square(Camera cam) {
     float px = -0.5 + rand1(g_seed);
@@ -143,10 +159,11 @@ void render_camera(Camera cam) {
     vec3 pixel_color = vec3(0.0, 0.0, 0.0);
     for (int i = 0; i < cam.samples_per_pixel; i++) {
         Ray ray = get_ray(cam, gl_FragCoord.x, cam.image_height - gl_FragCoord.y);
-        pixel_color += ray_color(ray);
+        pixel_color += ray_color(ray, cam.max_depth);
     }
 
     pixel_color /= float(cam.samples_per_pixel);
+    pixel_color = pow(pixel_color, vec3(1.0 / 2.2));
     gl_FragColor = vec4(pixel_color, 1.0);
 }
 
@@ -161,6 +178,7 @@ void main() {
     // Camera
     Camera cam;
     cam.samples_per_pixel = 100;
+    cam.max_depth = 50;
 
     // Render
     render_camera(cam);
