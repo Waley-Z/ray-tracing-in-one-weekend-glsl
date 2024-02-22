@@ -26,6 +26,7 @@ bool interval_surrounds(Interval i, float x) {
 struct Material {
     vec3 albedo;
     int type;
+    float fuzz;
 };
 
 struct Sphere {
@@ -64,9 +65,9 @@ bool material_scatter(Material mat, Ray r_in, HitRecord rec, out vec3 attenuatio
         }
         case METAL: {
             vec3 reflected = reflect(normalize(r_in.direction), rec.normal);
-            scattered = Ray(rec.p, reflected);
+            scattered = Ray(rec.p, reflected + mat.fuzz * random_unit_vector());
             attenuation = mat.albedo;
-            return true;
+            return dot(scattered.direction, rec.normal) > 0.0;
         }
         default: {
             return false;
@@ -225,10 +226,10 @@ void main() {
 ////////////////////////////////////////////// 
 //                  TASK 6                  //
     // World
-    Material material_ground = Material(vec3(0.8, 0.8, 0.0), LAMBERTIAN);
-    Material material_center = Material(vec3(0.7, 0.3, 0.3), LAMBERTIAN);
-    Material material_left = Material(vec3(0.8, 0.8, 0.8), METAL);
-    Material material_right = Material(vec3(0.8, 0.6, 0.2), METAL);
+    Material material_ground = Material(vec3(0.8, 0.8, 0.0), LAMBERTIAN, 0.0);
+    Material material_center = Material(vec3(0.7, 0.3, 0.3), LAMBERTIAN, 0.0);
+    Material material_left = Material(vec3(0.8, 0.8, 0.8), METAL, 0.3);
+    Material material_right = Material(vec3(0.8, 0.6, 0.2), METAL, 1.0);
 
     spheres[0] = Sphere(vec3(0.0, -100.5, -1.0), 100.0, material_ground);
     spheres[1] = Sphere(vec3(0.0, 0.0, -1.0), 0.5, material_center);
