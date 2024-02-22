@@ -164,6 +164,12 @@ struct Camera {
     vec3 lookat;
     vec3 vup;
     vec3 u, v, w;
+////////////////////////////////////////////// 
+//                  TASK 9                  //
+    float defocus_angle;
+    float focus_dist;
+    vec3 defocus_disk_u;
+    vec3 defocus_disk_v;
 };
 
 void initialize_camera(out Camera cam) {
@@ -173,10 +179,9 @@ void initialize_camera(out Camera cam) {
 
     cam.center = cam.lookfrom;
 
-    float focal_length = length(cam.lookfrom - cam.lookat);
     float theta = radians(cam.vfov);
     float h = tan(theta / 2.0);
-    float viewport_height = 2.0 * h * focal_length;
+    float viewport_height = 2.0 * h * cam.focus_dist;
     float viewport_width = cam.aspect_ratio * viewport_height;
 
     cam.w = normalize(cam.lookfrom - cam.lookat);
@@ -189,8 +194,14 @@ void initialize_camera(out Camera cam) {
     cam.pixel_delta_u = viewport_u / cam.image_width;
     cam.pixel_delta_v = viewport_v / cam.image_height;
 
-    vec3 viewport_upper_left = cam.center - focal_length * cam.w - viewport_u / 2.0 - viewport_v / 2.0;
+    vec3 viewport_upper_left = cam.center - cam.focus_dist * cam.w - viewport_u / 2.0 - viewport_v / 2.0;
     cam.pixel00_loc = viewport_upper_left + 0.5 * (cam.pixel_delta_u + cam.pixel_delta_v);
+
+    float defocus_radius = cam.focus_dist * tan(radians(cam.defocus_angle) / 2.0);
+    cam.defocus_disk_u = cam.u * defocus_radius;
+    cam.defocus_disk_v = cam.v * defocus_radius;
+//                                          //
+//////////////////////////////////////////////
 }
 
 vec3 ray_color(Ray r, int max_depth) {
@@ -226,11 +237,20 @@ vec3 pixel_sample_square(Camera cam) {
     return px * cam.pixel_delta_u + py * cam.pixel_delta_v;
 }
 
+////////////////////////////////////////////// 
+//                  TASK 9                  //
+vec3 defocus_disk_sample(Camera cam) {
+    vec2 p = random_in_unit_disk(g_seed);
+    return cam.center + p.x * cam.defocus_disk_u + p.y * cam.defocus_disk_v;
+}
+
 Ray get_ray(Camera cam, float i, float j) {
     vec3 pixel_center = cam.pixel00_loc + i * cam.pixel_delta_u + j * cam.pixel_delta_v;
     vec3 pixel_sample = pixel_center + pixel_sample_square(cam);
 
-    vec3 ray_origin = cam.center;
+    vec3 ray_origin = cam.defocus_angle <= 0.0 ? cam.center : defocus_disk_sample(cam);
+//                                          //
+//////////////////////////////////////////////
     vec3 ray_direction = pixel_sample - ray_origin;
     return Ray(ray_origin, ray_direction);
 }
@@ -274,6 +294,13 @@ void main() {
     cam.lookfrom = vec3(-2.0, 2.0, 1.0);
     cam.lookat = vec3(0.0, 0.0, -1.0);
     cam.vup = vec3(0.0, 1.0, 0.0);
+
+////////////////////////////////////////////// 
+//                  TASK 9                  //
+    cam.defocus_angle = 10.0;
+    cam.focus_dist = 3.4;
+//                                          //
+//////////////////////////////////////////////
 
     // Render
     render_camera(cam);
