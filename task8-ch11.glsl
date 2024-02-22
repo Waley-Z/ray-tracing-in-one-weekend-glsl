@@ -159,6 +159,13 @@ struct Camera {
     vec3 pixel_delta_v;
     int samples_per_pixel;
     int max_depth;
+////////////////////////////////////////////// 
+//                  TASK 8                  //
+    float vfov;
+    vec3 lookfrom;
+    vec3 lookat;
+    vec3 vup;
+    vec3 u, v, w;
 };
 
 void initialize_camera(out Camera cam) {
@@ -166,19 +173,27 @@ void initialize_camera(out Camera cam) {
     cam.image_height = iResolution.y;
     cam.aspect_ratio = cam.image_width / cam.image_height;
 
-    cam.center = vec3(0.0, 0.0, 0.0);
+    cam.center = cam.lookfrom;
 
-    float focal_length = 1.0;
-    float viewport_height = 2.0;
+    float focal_length = length(cam.lookfrom - cam.lookat);
+    float theta = radians(cam.vfov);
+    float h = tan(theta / 2.0);
+    float viewport_height = 2.0 * h * focal_length;
     float viewport_width = cam.aspect_ratio * viewport_height;
 
-    vec3 viewport_u = vec3(viewport_width, 0.0, 0.0);
-    vec3 viewport_v = vec3(0.0, -viewport_height, 0.0);
+    cam.w = normalize(cam.lookfrom - cam.lookat);
+    cam.u = normalize(cross(cam.vup, cam.w));
+    cam.v = cross(cam.w, cam.u);
+
+    vec3 viewport_u = viewport_width * cam.u;
+    vec3 viewport_v = viewport_height * (-cam.v);
 
     cam.pixel_delta_u = viewport_u / cam.image_width;
     cam.pixel_delta_v = viewport_v / cam.image_height;
 
-    vec3 viewport_upper_left = cam.center - vec3(0.0, 0.0, focal_length) - viewport_u / 2.0 - viewport_v / 2.0;
+    vec3 viewport_upper_left = cam.center - focal_length * cam.w - viewport_u / 2.0 - viewport_v / 2.0;
+//                                          //
+//////////////////////////////////////////////
     cam.pixel00_loc = viewport_upper_left + 0.5 * (cam.pixel_delta_u + cam.pixel_delta_v);
 }
 
@@ -258,6 +273,15 @@ void main() {
     Camera cam;
     cam.samples_per_pixel = 100;
     cam.max_depth = 50;
+
+////////////////////////////////////////////// 
+//                  TASK 8                  //
+    cam.vfov = 20.0;
+    cam.lookfrom = vec3(-2.0, 2.0, 1.0);
+    cam.lookat = vec3(0.0, 0.0, -1.0);
+    cam.vup = vec3(0.0, 1.0, 0.0);
+//                                          //
+//////////////////////////////////////////////
 
     // Render
     render_camera(cam);
