@@ -2,6 +2,7 @@
 
 #define LAMBERTIAN 0
 #define METAL 1
+#define DIELECTRIC 2
 
 struct Ray {
     vec3 origin;
@@ -24,7 +25,7 @@ bool interval_surrounds(Interval i, float x) {
 struct Material {
     vec3 albedo;
     int type;
-    float fuzz;
+    float var;  // For metal: fuzziness, for dielectric: refraction index
 };
 
 struct Sphere {
@@ -50,6 +51,16 @@ vec3 random_unit_vector() {
     return normalize(random_in_unit_sphere(g_seed));
 }
 
+////////////////////////////////////////////// 
+//                  TASK 7                  //
+float reflectance(float cosine, float ref_idx) {
+    float r0 = (1.0 - ref_idx) / (1.0 + ref_idx);
+    r0 = r0 * r0;
+    return r0 + (1.0 - r0) * pow((1.0 - cosine), 5.0);
+}
+//                                          //
+//////////////////////////////////////////////
+
 bool material_scatter(Material mat, Ray r_in, HitRecord rec, out vec3 attenuation, out Ray scattered) {
     switch (mat.type) {
         case LAMBERTIAN: {
@@ -63,10 +74,33 @@ bool material_scatter(Material mat, Ray r_in, HitRecord rec, out vec3 attenuatio
         }
         case METAL: {
             vec3 reflected = reflect(normalize(r_in.direction), rec.normal);
-            scattered = Ray(rec.p, reflected + mat.fuzz * random_unit_vector());
+            scattered = Ray(rec.p, reflected + mat.var * random_unit_vector());
             attenuation = mat.albedo;
             return dot(scattered.direction, rec.normal) > 0.0;
         }
+////////////////////////////////////////////// 
+//                  TASK 7                  //
+        case DIELECTRIC: {
+            attenuation = vec3(1.0);
+            float refraction_ratio = rec.front_face ? (1.0 / mat.var) : mat.var;
+
+            vec3 unit_direction = normalize(r_in.direction);
+            float cos_theta = min(dot(-unit_direction, rec.normal), 1.0);
+            float sin_theta = sqrt(1.0 - cos_theta * cos_theta);
+
+            bool cannot_refract = refraction_ratio * sin_theta > 1.0;
+            vec3 direction;
+
+            if (cannot_refract || reflectance(cos_theta, refraction_ratio) > rand1(g_seed))
+                direction = reflect(unit_direction, rec.normal);
+            else
+                direction = refract(unit_direction, rec.normal, refraction_ratio);
+
+            scattered = Ray(rec.p, direction);
+            return true;
+        }
+//                                          //
+//////////////////////////////////////////////
         default: {
             return false;
         }
@@ -217,15 +251,16 @@ void main() {
 
     // World
     Material material_ground = Material(vec3(0.8, 0.8, 0.0), LAMBERTIAN, 0.0);
-    Material material_center = Material(vec3(0.7, 0.3, 0.3), LAMBERTIAN, 0.0);
-    Material material_left = Material(vec3(0.8, 0.8, 0.8), METAL, 0.3);
-    Material material_right = Material(vec3(0.8, 0.6, 0.2), METAL, 1.0);
+    Material material_center = Material(vec3(0.1, 0.2, 0.5), LAMBERTIAN, 1.5);
+    Material material_left = Material(vec3(0.8, 0.8, 0.8), DIELECTRIC, 1.5);
+    Material material_right = Material(vec3(0.8, 0.6, 0.2), METAL, 0.0);
 
     spheres[0] = Sphere(vec3(0.0, -100.5, -1.0), 100.0, material_ground);
     spheres[1] = Sphere(vec3(0.0, 0.0, -1.0), 0.5, material_center);
     spheres[2] = Sphere(vec3(-1.0, 0.0, -1.0), 0.5, material_left);
-    spheres[3] = Sphere(vec3(1.0, 0.0, -1.0), 0.5, material_right);
-    num_spheres = 4;
+    spheres[3] = Sphere(vec3(-1.0, 0.0, -1.0), -0.4, material_left);
+    spheres[4] = Sphere(vec3(1.0, 0.0, -1.0), 0.5, material_right);
+    num_spheres = 5;
 
     // Camera
     Camera cam;
