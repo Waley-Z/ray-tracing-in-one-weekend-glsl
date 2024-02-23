@@ -101,7 +101,7 @@ bool material_scatter(Material mat, Ray r_in, HitRecord rec, out vec3 attenuatio
     }
 }
 
-const int MAX_SPHERES = 10;
+const int MAX_SPHERES = 150;
 Sphere spheres[MAX_SPHERES];
 int num_spheres = 0;
 
@@ -266,20 +266,46 @@ void render_camera(Camera cam) {
 }
 
 void main() {
-    init_rand(gl_FragCoord.xy, iTime);
+////////////////////////////////////////////// 
+//                  TASK 11                 //
+    Material ground_material = Material(vec3(0.5), LAMBERTIAN, 0.0);
+    spheres[num_spheres++] = Sphere(vec3(0.0, -1000.0, 0.0), 1000.0, ground_material);
 
-    // World
-    Material material_ground = Material(vec3(0.8, 0.8, 0.0), LAMBERTIAN, 0.0);
-    Material material_center = Material(vec3(0.1, 0.2, 0.5), LAMBERTIAN, 1.5);
-    Material material_left = Material(vec3(0.8, 0.8, 0.8), DIELECTRIC, 1.5);
-    Material material_right = Material(vec3(0.8, 0.6, 0.2), METAL, 0.0);
+    for (int a = -6; a < 6; a ++) {
+        for (int b = -6; b < 6; b ++) {
+            float choose_mat = rand1(g_seed);
+            vec3 center = vec3(float(a) + 0.9 * rand1(g_seed), 0.2, float(b) + 0.9 * rand1(g_seed));
 
-    spheres[0] = Sphere(vec3(0.0, -100.5, -1.0), 100.0, material_ground);
-    spheres[1] = Sphere(vec3(0.0, 0.0, -1.0), 0.5, material_center);
-    spheres[2] = Sphere(vec3(-1.0, 0.0, -1.0), 0.5, material_left);
-    spheres[3] = Sphere(vec3(-1.0, 0.0, -1.0), -0.4, material_left);
-    spheres[4] = Sphere(vec3(1.0, 0.0, -1.0), 0.5, material_right);
-    num_spheres = 5;
+            if (length(center - vec3(4.0, 0.2, 0.0)) > 0.9) {
+                Material sphere_material;
+
+                if (choose_mat < 0.8) {
+                    // Diffuse
+                    vec3 albedo = vec3(rand1(g_seed) * rand1(g_seed), rand1(g_seed) * rand1(g_seed), rand1(g_seed) * rand1(g_seed));
+                    sphere_material = Material(albedo, LAMBERTIAN, 0.0);
+                } else if (choose_mat < 0.95) {
+                    // Metal
+                    vec3 albedo = vec3(0.5 * (1.0 + rand1(g_seed)), 0.5 * (1.0 + rand1(g_seed)), 0.5 * (1.0 + rand1(g_seed)));
+                    float fuzz = 0.5 * rand1(g_seed);
+                    sphere_material = Material(albedo, METAL, fuzz);
+                } else {
+                    // Glass
+                    sphere_material = Material(vec3(1.0), DIELECTRIC, 1.5);
+                }
+
+                spheres[num_spheres++] = Sphere(center, 0.2, sphere_material);
+            }
+        }
+    }
+
+    Material material1 = Material(vec3(1.0), DIELECTRIC, 1.5);
+    spheres[num_spheres++] = Sphere(vec3(0.0, 1.0, 0.0), 1.0, material1);
+
+    Material material2 = Material(vec3(0.4, 0.2, 0.1), LAMBERTIAN, 0.0);
+    spheres[num_spheres++] = Sphere(vec3(-4.0, 1.0, 0.0), 1.0, material2);
+
+    Material material3 = Material(vec3(0.7, 0.6, 0.5), METAL, 0.0);
+    spheres[num_spheres++] = Sphere(vec3(4.0, 1.0, 0.0), 1.0, material3);
 
     // Camera
     Camera cam;
@@ -287,13 +313,16 @@ void main() {
     cam.max_depth = 50;
 
     cam.vfov = 20.0;
-    cam.lookfrom = vec3(-2.0, 2.0, 1.0);
-    cam.lookat = vec3(0.0, 0.0, -1.0);
+    cam.lookfrom = vec3(13.0, 2.0, 3.0);
+    cam.lookat = vec3(0.0, 0.0, 0.0);
     cam.vup = vec3(0.0, 1.0, 0.0);
 
-    cam.defocus_angle = 10.0;
-    cam.focus_dist = 3.4;
+    cam.defocus_angle = 0.6;
+    cam.focus_dist = 10.0;
 
     // Render
+    init_rand(gl_FragCoord.xy, iTime);
+//                                          //
+//////////////////////////////////////////////
     render_camera(cam);
 }
