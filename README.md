@@ -1,37 +1,37 @@
  # Hongxiao Zheng - PROGRAMMING ASSIGNMENT 6
 
  ## TASK 1
-    - describe any problems here
+    - No problem
 
  ## TASK 2
-    - describe any problems here
+    - No problem
 
  ## TASK 3
-    - describe any problems here
+    - No problem
 
  ## TASK 4
-    - describe any problems here
+    - No problem
 
  ## TASK 5
-    - describe any problems here
+    - No problem
 
  ## TASK 6
-    - describe any problems here
+    - No problem
 
  ## TASK 7
-    - describe any problems here
+    - No problem
 
  ## TASK 8
-    - describe any problems here
+    - No problem
 
  ## TASK 9
-    - describe any problems here
+    - No problem
 
  ## TASK 10
-    - describe any problems here
+    - No problem
 
  ## TASK 11
-    - describe any problems here
+    - Limit sphere number to 150, otherwise the program will crash.
 
  ## TASK 12
-    - describe any problems here
+    - No problem
