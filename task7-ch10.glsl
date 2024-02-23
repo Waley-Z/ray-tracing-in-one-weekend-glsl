@@ -88,7 +88,7 @@ bool material_scatter(Material mat, Ray r_in, HitRecord rec, out vec3 attenuatio
             float cos_theta = min(dot(-unit_direction, rec.normal), 1.0);
             float sin_theta = sqrt(1.0 - cos_theta * cos_theta);
 
-            bool cannot_refract = refraction_ratio * sin_theta > 1.0;
+            bool cannot_refract = refraction_ratio * sin_theta > 1.0 - 1e-7;
             vec3 direction;
 
             if (cannot_refract || reflectance(cos_theta, refraction_ratio) > rand1(g_seed))
