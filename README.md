@@ -1,37 +1,51 @@
- # Hongxiao Zheng - PROGRAMMING ASSIGNMENT 6
+# Ray Tracing in One Weekend - GLSL Shadertoy
 
- ## TASK 1
-    - No problem
+COSC 277 Computer Graphics: Programming Assignment 6
 
- ## TASK 2
-    - No problem
+A GLSL adaptation of [_Ray Tracing in One Weekend_](https://raytracing.github.io/books/RayTracingInOneWeekend.html).
 
- ## TASK 3
-    - No problem
+![](./previews/task11.png)
 
- ## TASK 4
-    - No problem
+## Introduction
 
- ## TASK 5
-    - No problem
+The GLSL source codes are meant to be run in VSCode using [Shader Toy plugin](https://marketplace.visualstudio.com/items?itemName=stevensona.shader-toy). To adapt the codes to [shadertoy.com](shadertoy.com), the following changes have to be made.
 
- ## TASK 6
-    - No problem
+* Replace `void main()` with `void mainImage(out vec4 fragColor, in vec2 fragCoord)`
+* Replace `gl_FragColor` with `fragColor`
+* Replace `gl_FragCoord` with `fragCoord`
 
- ## TASK 7
-    - No problem
+ ## TASK 1: Setup
+![](./previews/task1-ch4.png)
 
- ## TASK 8
-    - No problem
+ ## TASK 2: Adding a Sphere
+![](./previews/task2-ch5.png)
 
- ## TASK 9
-    - No problem
+ ## TASK 3: Surface Normals
+![](./previews/task3-ch6.png)
 
- ## TASK 10
-    - No problem
+ ## TASK 4: Antialiasing
+![](./previews/task4-ch7.png)
 
- ## TASK 11
-    - Limit sphere number to 150, otherwise the program will crash.
+ ## TASK 5: Diffuse Materials
+![](./previews/task5-ch8.png)
 
- ## TASK 12
-    - No problem
+ ## TASK 6: Metal
+![](./previews/task6-ch9.png)
+
+ ## TASK 7: Dielectrics
+![](./previews/task7-ch10.png)
+
+ ## TASK 8: Positionable Camera
+![](./previews/task8-ch11.png)
+
+ ## TASK 9: Defocus Blur
+![](./previews/task9-ch12.png)
+
+ ## TASK 10: Progressive Rendering
+![](./previews/task10.png)
+
+ ## TASK 11: Recreate Cover Image
+![](./previews/task11.png)
+
+ ## TASK 12: Interesting Scene
+![](./previews/task12.png)
